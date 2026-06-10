@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WC 2026 — Leaderboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a18;min-height:100vh;}
+.header{background:#3C3489;color:#EEEDFE;padding:1.25rem 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.header h1{font-size:18px;font-weight:500;}
+.header p{font-size:12px;opacity:.7;margin-top:2px;}
+.refresh-info{font-size:11px;opacity:.6;text-align:right;}
+.container{max-width:900px;margin:0 auto;padding:1.5rem 1rem;}
+.card{background:#fff;border-radius:12px;border:0.5px solid #e0ded6;padding:1.25rem;margin-bottom:1rem;}
+.section-title{font-size:11px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:1rem;}
+.metric{background:#f5f5f0;border-radius:8px;padding:10px 14px;}
+.metric-label{font-size:11px;color:#888780;margin-bottom:4px;}
+.metric-val{font-size:19px;font-weight:500;color:#1a1a18;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;font-weight:500;font-size:11px;color:#888780;padding:7px 8px;border-bottom:0.5px solid #e0ded6;}
+td{padding:9px 8px;border-bottom:0.5px solid #e0ded6;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr.winner-row{background:#f0fdf4;}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:12px;font-weight:500;}
+.rank-1{background:#EEEDFE;color:#3C3489;}
+.rank-2{background:#E6F1FB;color:#0C447C;}
+.rank-3{background:#EAF3DE;color:#27500A;}
+.rank-n{background:#f5f5f0;color:#888780;}
+.country-tag{display:inline-flex;align-items:center;gap:2px;font-size:11px;padding:2px 7px;border-radius:99px;border:0.5px solid #e0ded6;background:#f5f5f0;margin:2px;white-space:nowrap;}
+.country-tag.juara{background:#EEEDFE;border-color:#AFA9EC;color:#3C3489;font-weight:500;}
+.payout-breakdown{font-size:10px;color:#888780;margin-top:2px;}
+.positive{color:#166534;font-weight:500;}
+.negative{color:#991b1b;font-weight:500;}
+.loading{text-align:center;padding:3rem;color:#888780;font-size:14px;}
+.config-setup{background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:10px;padding:14px;margin-bottom:1rem;}
+.config-setup p{font-size:13px;color:#3C3489;margin-bottom:8px;}
+.config-setup input{width:100%;border:0.5px solid #AFA9EC;border-radius:7px;padding:6px 10px;font-size:13px;background:#fff;color:#1a1a18;font-family:inherit;margin-bottom:6px;}
+.config-setup button{padding:7px 14px;border-radius:8px;background:#3C3489;color:#EEEDFE;border:none;font-size:13px;cursor:pointer;font-family:inherit;}
+.countdown{display:flex;align-items:center;gap:6px;font-size:12px;opacity:.7;}
+.progress-bar{height:3px;background:#AFA9EC;border-radius:2px;overflow:hidden;width:80px;}
+.progress-fill{height:100%;background:#EEEDFE;border-radius:2px;transition:width 1s linear;}
+.note{font-size:11px;color:#888780;margin-top:10px;line-height:1.6;}
+.updated-at{font-size:11px;color:#888780;margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>⚽ WC 2026 — Leaderboard</h1>
+    <p>Total pot: Rp1.600.000 &nbsp;|&nbsp; 16 pemain</p>
+  </div>
+  <div class="refresh-info">
+    <div class="countdown">
+      <span>Refresh dalam <span id="countdownNum">30</span>s</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:100%"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div id="configSetup" class="config-setup" style="display:none;">
+    <p>Masukkan Bin ID dari admin untuk melihat leaderboard:</p>
+    <input type="text" id="binIdInput" placeholder="Contoh: 6847a1234abc123456789012">
+    <button onclick="saveBinId()">Tampilkan leaderboard</button>
+  </div>
+
+  <div id="mainContent">
+    <div class="loading" id="loadingState">Memuat data leaderboard...</div>
+    <div id="leaderContent" style="display:none;">
+      <div class="summary-grid">
+        <div class="metric"><div class="metric-label">Total pot</div><div class="metric-val">Rp1.600.000</div></div>
+        <div class="metric"><div class="metric-label">Pot juara (50%)</div><div class="metric-val">Rp800.000</div></div>
+        <div class="metric"><div class="metric-label">Pot performa (40%)</div><div class="metric-val">Rp640.000</div></div>
+        <div class="metric"><div class="metric-label">Pot hiburan (10%)</div><div class="metric-val">Rp160.000</div></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div class="section-title" style="margin:0;">Klasemen</div>
+          <div class="updated-at" id="updatedAt"></div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:30px;">#</th>
+                <th>Pemain</th>
+                <th>Negara</th>
+                <th style="text-align:right;">Poin</th>
+                <th style="text-align:right;">Proyeksi hadiah</th>
+                <th style="text-align:right;">Untung/Rugi</th>
+              </tr>
+            </thead>
+            <tbody id="leaderBody"></tbody>
+          </table>
+        </div>
+        <p class="note">Baris hijau = pemegang tim juara &nbsp;|&nbsp; J = Pot Juara, P = Pot Performa, H = Pot Hiburan<br>Proyeksi dihitung otomatis dan berubah setiap babak diupdate oleh admin.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STAGES={'Belum main':0,'Gugur grup':5,'Gugur R32':10,'Gugur R16':20,'Gugur QF':40,'Gugur SF':70,'Runner-up':110,'Juara Dunia':200};
+const POT_JUARA=800000,POT_PERFORMA=640000,POT_HIBURAN=160000,MODAL=100000;
+let binId=localStorage.getItem('wc_public_binid')||'';
+let countdown=30;
+let countdownInterval=null;
+
+function saveBinId(){
+  const val=document.getElementById('binIdInput').value.trim();
+  if(!val) return;
+  binId=val;
+  localStorage.setItem('wc_public_binid',binId);
+  document.getElementById('configSetup').style.display='none';
+  fetchData();
+}
+
+function rp(n){return'Rp'+Math.round(n).toLocaleString('id-ID');}
+
+function getPoints(p,cs){return[p.c1,p.c2,p.c3].reduce((s,c)=>s+(STAGES[cs[c]||'Belum main']||0),0);}
+
+function render(players,countryStages,updatedAt){
+  const juaraNegara=Object.keys(countryStages).filter(c=>countryStages[c]==='Juara Dunia');
+  const juaraHolders=players.filter(p=>juaraNegara.some(j=>[p.c1,p.c2,p.c3].includes(j)));
+  const totalPts=players.reduce((s,p)=>s+getPoints(p,countryStages),0);
+  const results=players.map(p=>{
+    const pts=getPoints(p,countryStages);
+    const isJuara=juaraHolders.includes(p);
+    const juaraPot=isJuara&&juaraHolders.length>0?POT_JUARA/juaraHolders.length:0;
+    const perfPot=totalPts>0?POT_PERFORMA*(pts/totalPts):0;
+    const hibCount=players.length-juaraHolders.length;
+    const hibPot=!isJuara&&hibCount>0?POT_HIBURAN/hibCount:0;
+    const total=juaraPot+perfPot+hibPot;
+    return{p,pts,isJuara,juaraPot,perfPot,hibPot,total,pl:total-MODAL};
+  }).sort((a,b)=>b.total-a.total);
+
+  document.getElementById('leaderBody').innerHTML=results.map((r,i)=>{
+    const rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
+    const plClass=r.pl>=0?'positive':'negative';
+    const countries=[r.p.c1,r.p.c2,r.p.c3].map(c=>`<span class="country-tag${countryStages[c]==='Juara Dunia'?' juara':''}">${c}</span>`).join('');
+    return`<tr${r.isJuara?' class="winner-row"':''}>
+      <td><span class="rank-badge ${rc}">${i+1}</span></td>
+      <td><div style="font-weight:500">${r.p.name}</div><div class="payout-breakdown">J:${rp(r.juaraPot)} + P:${rp(r.perfPot)} + H:${rp(r.hibPot)}</div></td>
+      <td>${countries}</td>
+      <td style="text-align:right;font-weight:500">${r.pts}</td>
+      <td style="text-align:right;font-weight:500">${rp(r.total)}</td>
+      <td style="text-align:right" class="${plClass}">${r.pl>=0?'+':''}${rp(r.pl)}</td>
+    </tr>`;
+  }).join('');
+
+  if(updatedAt){
+    const d=new Date(updatedAt);
+    document.getElementById('updatedAt').textContent='Update terakhir: '+d.toLocaleString('id-ID');
+  }
+  document.getElementById('loadingState').style.display='none';
+  document.getElementById('leaderContent').style.display='block';
+}
+
+async function fetchData(){
+  if(!binId){
+    document.getElementById('loadingState').style.display='none';
+    document.getElementById('configSetup').style.display='block';
+    return;
+  }
+  try{
+    const res=await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,{
+      headers:{'X-Access-Key':binId}
+    });
+    if(!res.ok) throw new Error('Gagal fetch');
+    const data=await res.json();
+    const {players,countryStages,updatedAt}=data.record;
+    render(players,countryStages,updatedAt);
+  } catch(e){
+    document.getElementById('loadingState').innerHTML='<p style="color:#991b1b;">Gagal memuat data. Pastikan Bin ID benar.<br><small>'+e.message+'</small></p>';
+    document.getElementById('configSetup').style.display='block';
+    document.getElementById('binIdInput').value=binId;
+  }
+}
+
+function startCountdown(){
+  if(countdownInterval) clearInterval(countdownInterval);
+  countdown=30;
+  countdownInterval=setInterval(()=>{
+    countdown--;
+    document.getElementById('countdownNum').textContent=countdown;
+    const pct=(countdown/30)*100;
+    document.getElementById('progressFill').style.width=pct+'%';
+    if(countdown<=0){
+      countdown=30;
+      fetchData();
+    }
+  },1000);
+}
+
+fetchData();
+startCountdown();
+</script>
+</body>
+</html>

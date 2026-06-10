@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WC 2026 — Admin Panel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a18;min-height:100vh;}
+.header{background:#3C3489;color:#EEEDFE;padding:1.25rem 1.5rem;}
+.header h1{font-size:18px;font-weight:500;}
+.header p{font-size:12px;opacity:.7;margin-top:2px;}
+.container{max-width:900px;margin:0 auto;padding:1.5rem 1rem;}
+.card{background:#fff;border-radius:12px;border:0.5px solid #e0ded6;padding:1.25rem;margin-bottom:1rem;}
+.section-title{font-size:11px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+.tabs{display:flex;gap:4px;margin-bottom:1.5rem;background:#fff;border-radius:10px;padding:6px;border:0.5px solid #e0ded6;}
+.tab{flex:1;padding:8px 12px;border-radius:7px;border:none;background:transparent;color:#888780;font-size:13px;cursor:pointer;font-family:inherit;}
+.tab.active{background:#3C3489;color:#EEEDFE;font-weight:500;}
+.panel{display:none;}
+.panel.active{display:block;}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:500px){.setup-grid{grid-template-columns:1fr;}}
+.player-setup{border:0.5px solid #e0ded6;border-radius:10px;padding:10px 12px;background:#fafaf8;}
+.player-setup input{width:100%;border:0.5px solid #d3d1c7;border-radius:7px;padding:5px 9px;font-size:12px;background:#fff;color:#1a1a18;margin-bottom:6px;font-family:inherit;}
+.countries-row{display:flex;gap:4px;}
+.country-sel{flex:1;min-width:0;font-size:11px;padding:4px 5px;border-radius:7px;border:0.5px solid #d3d1c7;background:#fff;color:#1a1a18;font-family:inherit;}
+.btn{padding:8px 16px;border-radius:8px;border:0.5px solid #d3d1c7;background:#fff;color:#1a1a18;font-size:13px;cursor:pointer;font-family:inherit;margin-right:6px;margin-top:8px;}
+.btn:hover{background:#f5f5f0;}
+.btn-primary{background:#3C3489;color:#EEEDFE;border-color:#3C3489;}
+.btn-primary:hover{background:#534AB7;}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-danger{background:#991b1b;color:#fff;border-color:#991b1b;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;font-weight:500;font-size:11px;color:#888780;padding:7px 8px;border-bottom:0.5px solid #e0ded6;}
+td{padding:8px 8px;border-bottom:0.5px solid #e0ded6;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.stage-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:0.5px solid #f0ede6;}
+.stage-row:last-child{border-bottom:none;}
+.stage-name{font-size:13px;color:#5F5E5A;width:160px;}
+.stage-pts{font-size:13px;font-weight:500;}
+.progress-select{font-size:12px;padding:4px 8px;border-radius:7px;border:0.5px solid #d3d1c7;background:#fff;color:#1a1a18;font-family:inherit;width:100%;}
+.note{font-size:11px;color:#888780;margin-top:10px;line-height:1.6;}
+.config-box{background:#fafaf8;border:0.5px solid #e0ded6;border-radius:10px;padding:12px;}
+.config-box input{width:100%;border:0.5px solid #d3d1c7;border-radius:7px;padding:6px 10px;font-size:13px;background:#fff;color:#1a1a18;font-family:inherit;margin-top:6px;}
+.config-box label{font-size:12px;color:#5F5E5A;}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;}
+.dot-green{background:#16a34a;}
+.dot-red{background:#dc2626;}
+.dot-yellow{background:#d97706;}
+.status-text{font-size:12px;}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;}
+.alert-success{background:#f0fdf4;border:0.5px solid #86efac;color:#166534;}
+.alert-error{background:#fef2f2;border:0.5px solid #fca5a5;color:#991b1b;}
+.alert-info{background:#EEEDFE;border:0.5px solid #AFA9EC;color:#3C3489;}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>⚽ WC 2026 — Admin Panel</h1>
+  <p>Hanya untuk admin. Jangan share halaman ini ke peserta.</p>
+</div>
+<div class="container">
+
+  <div id="alertBox"></div>
+
+  <div class="card">
+    <div class="section-title">Konfigurasi JSONBin</div>
+    <div class="config-box">
+      <label>API Key (dari jsonbin.io → Account → API Keys)</label>
+      <input type="text" id="apiKey" placeholder="$2a$10$xxxxxxxxxxxxxxxxxxxx" oninput="saveConfig()">
+      <label style="margin-top:10px;display:block;">Bin ID (kosongkan jika belum punya — akan dibuat otomatis)</label>
+      <input type="text" id="binId" placeholder="Akan terisi otomatis setelah pertama kali simpan" oninput="saveConfig()">
+    </div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+      <span class="status-dot dot-yellow" id="statusDot"></span>
+      <span class="status-text" id="statusText">Belum terhubung</span>
+    </div>
+    <p class="note">
+      Cara dapat API Key: Daftar di <strong>jsonbin.io</strong> (gratis) → Login → klik avatar pojok kanan atas → "API Keys" → copy Master Key
+    </p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('setup')">1. Setup Pemain</button>
+    <button class="tab" onclick="showTab('progress')">2. Update Hasil</button>
+  </div>
+
+  <div id="tab-setup" class="panel active">
+    <div class="card">
+      <div class="section-title">Referensi poin</div>
+      <div class="stage-row"><span class="stage-name">Gugur fase grup</span><span class="stage-pts">5 poin</span></div>
+      <div class="stage-row"><span class="stage-name">Gugur babak 32 besar</span><span class="stage-pts">10 poin</span></div>
+      <div class="stage-row"><span class="stage-name">Gugur babak 16 besar</span><span class="stage-pts">20 poin</span></div>
+      <div class="stage-row"><span class="stage-name">Gugur perempat final</span><span class="stage-pts">40 poin</span></div>
+      <div class="stage-row"><span class="stage-name">Gugur semifinal</span><span class="stage-pts">70 poin</span></div>
+      <div class="stage-row"><span class="stage-name">Runner-up</span><span class="stage-pts">110 poin</span></div>
+      <div class="stage-row"><span class="stage-name">Juara Dunia</span><span class="stage-pts" style="color:#3C3489;">200 poin</span></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Isi nama & 3 negara tiap pemain</div>
+      <div class="setup-grid" id="setupGrid"></div>
+      <button class="btn btn-primary" onclick="saveAll()">Simpan & publikasikan ke leaderboard</button>
+      <button class="btn btn-sm" onclick="loadDemo()">Isi data contoh</button>
+    </div>
+  </div>
+
+  <div id="tab-progress" class="panel">
+    <div class="card">
+      <div class="section-title">Update tahap setiap negara</div>
+      <table>
+        <thead><tr><th>Negara</th><th>Tahap saat ini</th></tr></thead>
+        <tbody id="progressBody"></tbody>
+      </table>
+      <button class="btn btn-primary" onclick="saveAll()">Simpan & publikasikan</button>
+      <p class="note">Setiap klik "Simpan & publikasikan", leaderboard publik langsung terupdate.</p>
+    </div>
+  </div>
+
+</div>
+<script>
+const STAGES={'Belum main':0,'Gugur grup':5,'Gugur R32':10,'Gugur R16':20,'Gugur QF':40,'Gugur SF':70,'Runner-up':110,'Juara Dunia':200};
+const STAGE_KEYS=Object.keys(STAGES);
+const ALL_COUNTRIES=['🇫🇷 Prancis','🇪🇸 Spanyol','🇦🇷 Argentina','🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inggris','🇵🇹 Portugal','🇧🇷 Brasil','🇩🇪 Jerman','🇳🇱 Belanda','🇧🇪 Belgia','🇺🇾 Uruguay','🇨🇴 Kolombia','🇺🇸 USA','🇲🇽 Meksiko','🇯🇵 Jepang','🇸🇳 Senegal','🇲🇦 Maroko','🇭🇷 Kroasia','🇰🇷 Korea Selatan','🇹🇷 Turki','🇨🇭 Swiss','🇦🇹 Austria','🇸🇪 Swedia','🇪🇨 Ekuador','🇳🇴 Norwegia'];
+
+let players=[];
+let countryStages={};
+
+function saveConfig(){
+  localStorage.setItem('wc_apikey',document.getElementById('apiKey').value);
+  localStorage.setItem('wc_binid',document.getElementById('binId').value);
+}
+
+function loadConfig(){
+  const k=localStorage.getItem('wc_apikey')||'';
+  const b=localStorage.getItem('wc_binid')||'';
+  document.getElementById('apiKey').value=k;
+  document.getElementById('binId').value=b;
+  return{key:k,binId:b};
+}
+
+function setStatus(state,msg){
+  const colors={ok:'dot-green',err:'dot-red',wait:'dot-yellow'};
+  const dot=document.getElementById('statusDot');
+  dot.className='status-dot '+colors[state];
+  document.getElementById('statusText').textContent=msg;
+}
+
+function showAlert(type,msg){
+  const box=document.getElementById('alertBox');
+  box.innerHTML=`<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(()=>box.innerHTML='',4000);
+}
+
+function showTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['setup','progress'][i]===t));
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='progress') renderProgress();
+}
+
+function buildSetupGrid(){
+  const g=document.getElementById('setupGrid');
+  g.innerHTML='';
+  for(let i=0;i<16;i++){
+    const saved=players[i]||{name:'',c1:ALL_COUNTRIES[0],c2:ALL_COUNTRIES[8],c3:ALL_COUNTRIES[18]};
+    const div=document.createElement('div');
+    div.className='player-setup';
+    div.innerHTML=`<input type="text" placeholder="Nama pemain ${i+1}" value="${saved.name}" id="pname_${i}">
+    <div class="countries-row">
+      ${[0,1,2].map(j=>`<select class="country-sel" id="pc${j}_${i}">${ALL_COUNTRIES.map(c=>`<option value="${c}"${saved['c'+(j+1)]===c?' selected':''}>${c}</option>`).join('')}</select>`).join('')}
+    </div>`;
+    g.appendChild(div);
+  }
+}
+
+function collectPlayers(){
+  const arr=[];
+  const stages={};
+  for(let i=0;i<16;i++){
+    const name=document.getElementById(`pname_${i}`).value.trim()||`Pemain ${i+1}`;
+    const c1=document.getElementById(`pc0_${i}`).value;
+    const c2=document.getElementById(`pc1_${i}`).value;
+    const c3=document.getElementById(`pc2_${i}`).value;
+    arr.push({name,c1,c2,c3});
+    [c1,c2,c3].forEach(c=>{if(!stages[c])stages[c]=countryStages[c]||'Belum main';});
+  }
+  return{arr,stages};
+}
+
+function renderProgress(){
+  const {arr,stages}=collectPlayers();
+  players=arr; countryStages=stages;
+  const countries=[...new Set(players.flatMap(p=>[p.c1,p.c2,p.c3]))].sort();
+  document.getElementById('progressBody').innerHTML=countries.map(c=>`
+    <tr><td>${c}</td><td>
+      <select class="progress-select" data-country="${c}">
+        ${STAGE_KEYS.map(s=>`<option value="${s}"${(countryStages[c]||'Belum main')===s?' selected':''}>${s} — ${STAGES[s]} poin</option>`).join('')}
+      </select></td></tr>`).join('');
+}
+
+function collectProgress(){
+  document.querySelectorAll('#progressBody select').forEach(sel=>{countryStages[sel.dataset.country]=sel.value;});
+}
+
+async function saveAll(){
+  collectProgress();
+  const {arr,stages}=collectPlayers();
+  players=arr; countryStages=stages;
+  const cfg=loadConfig();
+  if(!cfg.key){showAlert('error','Isi API Key JSONBin dulu!');return;}
+  const payload={players,countryStages,updatedAt:new Date().toISOString()};
+  setStatus('wait','Menyimpan...');
+  try{
+    let url,method,headers={
+      'Content-Type':'application/json',
+      'X-Master-Key':cfg.key,
+      'X-Bin-Private':'false'
+    };
+    if(cfg.binId){
+      url=`https://api.jsonbin.io/v3/b/${cfg.binId}`;
+      method='PUT';
+    } else {
+      url='https://api.jsonbin.io/v3/b';
+      method='POST';
+      headers['X-Bin-Name']='wc2026-tracker';
+    }
+    const res=await fetch(url,{method,headers,body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.message||'Gagal');
+    if(!cfg.binId){
+      const newId=data.metadata.id;
+      document.getElementById('binId').value=newId;
+      localStorage.setItem('wc_binid',newId);
+      showAlert('success',`Berhasil! Bin ID: ${newId} — sudah tersimpan otomatis.`);
+    } else {
+      showAlert('success','Leaderboard berhasil diupdate!');
+    }
+    setStatus('ok','Terhubung & tersimpan');
+  } catch(e){
+    setStatus('err','Gagal menyimpan');
+    showAlert('error','Error: '+e.message);
+  }
+}
+
+function loadDemo(){
+  const names=['Winan','Budi','Andi','Cici','Dedi','Eko','Fajar','Gita','Hani','Irwan','Joko','Kiki','Lina','Miko','Nina','Oki'];
+  const assigns=[
+    ['🇫🇷 Prancis','🇧🇪 Belgia','🇹🇷 Turki'],['🇫🇷 Prancis','🇺🇾 Uruguay','🇸🇪 Swedia'],
+    ['🇪🇸 Spanyol','🇨🇴 Kolombia','🇨🇭 Swiss'],['🇪🇸 Spanyol','🇺🇸 USA','🇦🇹 Austria'],
+    ['🇦🇷 Argentina','🇲🇽 Meksiko','🇳🇴 Norwegia'],['🇦🇷 Argentina','🇯🇵 Jepang','🇪🇨 Ekuador'],
+    ['🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inggris','🇸🇳 Senegal','🇸🇪 Swedia'],['🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inggris','🇲🇦 Maroko','🇨🇭 Swiss'],
+    ['🇵🇹 Portugal','🇭🇷 Kroasia','🇦🇹 Austria'],['🇵🇹 Portugal','🇰🇷 Korea Selatan','🇳🇴 Norwegia'],
+    ['🇧🇷 Brasil','🇺🇾 Uruguay','🇹🇷 Turki'],['🇧🇷 Brasil','🇨🇴 Kolombia','🇪🇨 Ekuador'],
+    ['🇩🇪 Jerman','🇺🇸 USA','🇸🇪 Swedia'],['🇩🇪 Jerman','🇸🇳 Senegal','🇦🇹 Austria'],
+    ['🇳🇱 Belanda','🇲🇽 Meksiko','🇹🇷 Turki'],['🇳🇱 Belanda','🇲🇦 Maroko','🇳🇴 Norwegia'],
+  ];
+  for(let i=0;i<16;i++){
+    document.getElementById(`pname_${i}`).value=names[i];
+    document.getElementById(`pc0_${i}`).value=assigns[i][0];
+    document.getElementById(`pc1_${i}`).value=assigns[i][1];
+    document.getElementById(`pc2_${i}`).value=assigns[i][2];
+  }
+}
+
+(function init(){
+  loadConfig();
+  buildSetupGrid();
+})();
+</script>
+</body>
+</html>
